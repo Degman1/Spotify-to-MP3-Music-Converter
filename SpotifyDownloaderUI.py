@@ -2,9 +2,6 @@
 SpotifyDownloaderUI to create the user interface for the program and handle the various methods of
 SpotifyDownloaderClient in relation to their UI commands
 
-********* THESE EXECUTABLE FILES, ALTHOUGH REPRESENTING THE UPDATED VERSION OF THE PROGRAM, ARE NOT MEANT TO BE
-          DIRECTLY IN TERMINAL. THEY ARE SOLELY MEANT TO BE COMPILED INTO AN EXECUTABLE
-
 When running in terminal, you must use the sudo command to be able to have admin access
 
 """
@@ -106,8 +103,8 @@ class SpotifyDownloaderUI:
             return
         c = self.client.getContents(self.current_playlist)
         if c is not None:
-            print("The current playlist contains %s songs:" % len(c))
-            print( "\n".join(c) )
+            print("\nThe current playlist contains %s songs:" % len(c) + "\n")
+            print( "\t" + "\n\t".join(c) )
         else:
             print("ERROR: The current playlist does not yet exist in the output directory")
 
@@ -214,7 +211,7 @@ class SpotifyDownloaderUI:
                 self.parseInput(user_input.split(" "))
             except Exception as e:
                 print(e)
-                print("WARNING: Continued session despite the crash...")
+                print("ERROR: Continued session despite the crash...")
             print("\n__________________________________________")
             user_input = input("> ")
 

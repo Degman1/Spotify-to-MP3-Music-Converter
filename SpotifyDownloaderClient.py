@@ -3,9 +3,6 @@ SpotifyDownloaderClient to handle the downloading of songs retrieving data from 
 songs off of youtube, and converting them into mp3 files. Credit for the downloading methods along with various 
 peices of the code goes to the creator of spotify_album_downloader.py on github
 
-********* THESE EXECUTABLE FILES, ALTHOUGH REPRESENTING THE UPDATED VERSION OF THE PROGRAM, ARE NOT MEANT TO BE
-          DIRECTLY IN TERMINAL. THEY ARE SOLELY MEANT TO BE COMPILED INTO AN EXECUTABLE
-
 """
 
 import spotipy
@@ -38,7 +35,7 @@ class SpotifyDownloaderClient:
     
     @staticmethod
     def announceCompletion(str):
-        print("****" + str)
+        print("*** " + str)
     
     @staticmethod
     def stripString(text):
@@ -49,27 +46,29 @@ class SpotifyDownloaderClient:
         if '_percent_str' in d:
             if d['status'] == 'downloading':
                 print ("\r" + d['_percent_str'], end = "")
-        if d['status'] == 'finished':
-                print ('\rDone downloading, now converting ...')
+        #if d['status'] == 'finished':
+        #    print ('\rDone downloading, now converting ...')
     
     def getContents(self, playlist_name):
         if os.path.exists(self.cwd + "/output/" + playlist_name):
             c = os.listdir(self.cwd + "/output/" + playlist_name)
             if ".DS_Store" in c:
                 c.remove(".DS_Store")
+            if "uri.txt" in c:
+                c.remove("uri.txt")
             return c
         else:
             return None
     
     class MyLogger(object):
         def debug(self, msg):
-            pass
+            print("DEBUG: " + str(msg))
 
         def warning(self, msg):
-            pass
+            print("WARNING: " + str(msg))
 
         def error(self, msg):
-            print (msg)
+            print("ERROR: " + str(msg))
 
     def downloadYoutubeToMP3(self, link):
         try:
@@ -108,8 +107,8 @@ class SpotifyDownloaderClient:
             title = SpotifyDownloaderClient.stripString(song['track']['name'])
             if title not in contents:
                 individual_songs_temp.append(song)
-            else:
-                print("The song %s is already downloaded into this playlist" % (title))
+            #else:
+            #    print("The song %s is already downloaded into this playlist" % (title))
 
         SpotifyDownloaderClient.announceCompletion("Song Filtering Successful")
         return individual_songs_temp
@@ -173,7 +172,7 @@ class SpotifyDownloaderClient:
             print("ERROR: Could not download requested song. Please try a different URL (different youtube video)")
             return
         
-        print("Download Complete")
+        print("\rDownload and conversion complete")
 
         file = None
         files_in_cd = os.listdir(os.getcwd())
@@ -197,11 +196,8 @@ class SpotifyDownloaderClient:
         os.rename(file, (name))
         print("Saved at: " + name)
 
-
     def downloadSong(self, song_data, song, playlist_name):
         try:
-            print ("")
-
             results = self.getWebpageContents(song_data, song)
 
             for tile in results:
@@ -220,7 +216,9 @@ class SpotifyDownloaderClient:
             if video_URL == "Error":
                 print ("Failed on: " + song_data[song]['artist'] + "  - " + song_data[song]['title'])
                 return 0
+
             files_in_cd = os.listdir(self.cwd)
+
             for i in files_in_cd:
                 if i.endswith(".mp3"):
                     os.remove(self.cwd + "/" + i)
@@ -233,15 +231,14 @@ class SpotifyDownloaderClient:
             if not a:
                 print ("Failed on: " + song_data[song]['artist'] + "  - " + song_data[song]['title'])
                 return
-            print ("Download Complete")
+
+            print ("\rDownload and conversion complete")
+
             files_in_cd = os.listdir(os.getcwd())
+
             for i in files_in_cd:
                 if i.endswith(".mp3"):
                     file = os.getcwd() + "/" + i
-            try:
-                print ("Tagging /" + file.split("/")[-1])
-            except:
-                print ("Tagging (Special charaters in name)")
 
             audio = MP3(file, ID3=ID3)
             
@@ -259,15 +256,16 @@ class SpotifyDownloaderClient:
             audio["title"] = song_data[song]['title']
             audio["album"] = song_data[song]['album']
             audio["artist"] = song_data[song]['artist']
+            audio["genre"] = playlist_name #this allows the user to add the song to the apple music library and create a smart-playlist to only include songs from a certain playlist (under key of genre)
             audio.save()
 
             title = SpotifyDownloaderClient.stripString(song_data[song]['title'])
-            artist = SpotifyDownloaderClient.stripString(song_data[song]['artist'])
+            #artist = SpotifyDownloaderClient.stripString(song_data[song]['artist'])
             #album = SpotifyDownloaderClient.stripString(song_data[song]['album'])
 
             #rename the mp3 file to put it in the correct directory
             try:
-                name = SpotifyDownloaderClient.stripString(artist + " - " + title + ".mp3")
+                name = SpotifyDownloaderClient.stripString(title + ".mp3")
                 os.rename(file, (self.cwd + "/output/" + playlist_name + "/" + name))
                 print ("Saved at: " + self.cwd + "/output/" + playlist_name + "/" + name)
                 return 1
@@ -298,11 +296,16 @@ class SpotifyDownloaderClient:
     def downloadPlaylist(self, song_data, playlist_name):
         total = len(song_data)
         complete_counter = 0
+
         for song in song_data:
+            print("\nStarting song %s/%s:" % (complete_counter, total))
+
             c = self.downloadSong(song_data, song, playlist_name)
+
             if c:
                 complete_counter += 1
-                print("Download %s/%s finished running" % (complete_counter, total))
+
+                #update the recently changed playlists dictionary
                 if playlist_name not in self.rcp.keys():
                     self.rcp[playlist_name] = {song_data[song]['title']}
                 else:
@@ -310,9 +313,20 @@ class SpotifyDownloaderClient:
             else:
                 print("ERROR: Unable to download the song %s" % (song))
 
-        n_all_songs = len( os.listdir(self.cwd + "/output/" + playlist_name + "/") )
-        SpotifyDownloaderClient.announceCompletion("All Downloads Finished: %s/%s Were Successful\nThere are now %s songs in the playlist %s" % (complete_counter, total, n_all_songs, playlist_name))
+        all_songs = os.listdir(self.cwd + "/output/" + playlist_name + "/")
+        n_all_songs = len(all_songs)
 
+        if "uri.txt" in all_songs:
+            n_all_songs -= 1
+        if ".DS_Store" in all_songs:
+            n_all_songs -= 1
+
+        if total == 0:
+            SpotifyDownloaderClient.announceCompletion("Playlist is already up to date")
+        else:
+            SpotifyDownloaderClient.announceCompletion("All Downloads Finished: %s/%s Were Successful" % (complete_counter, total))
+        
+        SpotifyDownloaderClient.announceCompletion("There are now %s songs in the playlist %s" % (n_all_songs, playlist_name))
 
     def runDownload(self, uri, playlist_name):
         self.directorySetup(playlist_name)                      # setup correct directories required for download
