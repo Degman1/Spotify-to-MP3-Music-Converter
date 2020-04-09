@@ -1,4 +1,4 @@
-Spotify Playlist Downloader
+Spotify-to-MP3-Music-Converter
 by David Gerard
 
 Credit to the creator of https://github.com/brentvollebregt/spotify-playlist-downloader.git for the method of downloading
