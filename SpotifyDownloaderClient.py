@@ -62,10 +62,10 @@ class SpotifyDownloaderClient:
     
     class MyLogger(object):
         def debug(self, msg):
-            print("DEBUG: " + str(msg))
+            pass
 
         def warning(self, msg):
-            print("WARNING: " + str(msg))
+            pass
 
         def error(self, msg):
             print("ERROR: " + str(msg))
@@ -153,7 +153,6 @@ class SpotifyDownloaderClient:
         search_term = song_data[song]['artist'] + " " + song_data[song]['title'] + " lyrics"
         Search_URL = ''.join([i for i in filter(lambda x: x in set('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r\x0b\x0c'), "https://www.youtube.com/results?search_query=" + '+'.join(search_term.replace("&", "%26").replace("=", "%3D").replace("*", "%3D").split(" ")))])
 
-        print ("Getting " + Search_URL)
         page = urllib.request.urlopen(Search_URL, context=self.gcontext)
         soup = BeautifulSoup(page.read(), "html.parser")
         #search_page = soup.find_all('ol', 'item-section')[0]
@@ -298,7 +297,7 @@ class SpotifyDownloaderClient:
         complete_counter = 0
 
         for song in song_data:
-            print("\nStarting song %s/%s:" % (complete_counter, total))
+            print("\nStarting song %s/%s:" % (complete_counter + 1, total))
 
             c = self.downloadSong(song_data, song, playlist_name)
 
@@ -320,7 +319,8 @@ class SpotifyDownloaderClient:
             n_all_songs -= 1
         if ".DS_Store" in all_songs:
             n_all_songs -= 1
-
+        
+        print()
         if total == 0:
             SpotifyDownloaderClient.announceCompletion("Playlist is already up to date")
         else:
