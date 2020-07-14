@@ -42,6 +42,7 @@ class SpotifyDownloaderUI:
         desc += "                                       (found by clicking the three dots next to the play button on\n"
         desc += "                                       the spotify app) into the directory ./output/current_playlist\n"
         desc += "                                       set using the command setp\n"
+        desc += "  updateAllPlaylists                -- updates every available playlist that already has an associated URI\n"
         desc += "  rm [filename]                     -- removes file [filename] from the current playlist\n"
         desc += "  contents                          -- prints out the contents of the current playlist\n"
         desc += "  quit                              -- quits the SpotifyDownloader program"
@@ -115,9 +116,13 @@ class SpotifyDownloaderUI:
             for s in songs:
                 print("    " + s)
 
-    def updatePlaylist(self):
+    def updatePlaylist(self, playlistName):
+        if self.current_playlist is None:
+            print("ERROR: A current playlist must be selected before a path can be displayed")
+            return
+
         URI = None
-        URIpath = self.cwd + "/output/" + self.current_playlist + "/uri.txt"
+        URIpath = self.cwd + "/output/" + playlistName + "/uri.txt"
 
         if os.path.exists(URIpath):
             URIFile = open(URIpath, "r")
@@ -135,7 +140,15 @@ class SpotifyDownloaderUI:
         if URI is None:
             print("ERROR: Could not obtain the proper URI. Please attempt the downloadPlaylist command instead.")
         else:
-            self.client.runDownload(URI, self.current_playlist)
+            self.client.runDownload(URI, playlistName)
+
+    def updateAllPlaylists(self):
+        playlists = os.listdir(self.cwd + "/output/")
+        for playlist in playlists:
+            URIpath = self.cwd + "/output/" + playlist + "/uri.txt"
+            if not os.path.exists(URIpath):
+                continue
+            self.updatePlaylist(playlist)
 
     def setURI(self, URI):
         if self.current_playlist is  None:
@@ -195,7 +208,9 @@ class SpotifyDownloaderUI:
         elif cmd == "printrcp":
             if self.checkArgs(cmdLine, 0): self.printRCP()
         elif cmd == "updateplaylist":
-            if self.checkArgs(cmdLine, 0): self.updatePlaylist()
+            if self.checkArgs(cmdLine, 0): self.updatePlaylist(self.current_playlist)
+        elif cmd == "updateallplaylists":
+            if self.checkArgs(cmdLine, 0): self.updateAllPlaylists()
         elif cmd == "seturi":
             if self.checkArgs(cmdLine, 1): self.setURI(cmdLine[1])
         elif cmd == "printuri":

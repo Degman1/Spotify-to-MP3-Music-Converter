@@ -18,7 +18,7 @@ import ssl
 from bs4 import BeautifulSoup
 import os
 import sys
-
+import requests
 
 class SpotifyDownloaderClient:
     sp = None   #holds spotify client credentials
@@ -149,14 +149,27 @@ class SpotifyDownloaderClient:
         SpotifyDownloaderClient.announceCompletion("Song Data Retrieval Successful")
         return song_data
 
-    def getWebpageContents(self, song_data, song):
+    def getVideoURL(self, song_data, song):
         search_term = song_data[song]['artist'] + " " + song_data[song]['title'] + " lyrics"
         Search_URL = ''.join([i for i in filter(lambda x: x in set('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r\x0b\x0c'), "https://www.youtube.com/results?search_query=" + '+'.join(search_term.replace("&", "%26").replace("=", "%3D").replace("*", "%3D").split(" ")))])
+        
+        html = requests.get(Search_URL).text
+        key = "\"webCommandMetadata\":{\"url\":\"/watch?v="
+        index = html.find(key)
 
-        page = urllib.request.urlopen(Search_URL, context=self.gcontext)
-        soup = BeautifulSoup(page.read(), "html.parser")
-        #search_page = soup.find_all('ol', 'item-section')[0]
-        return soup.find_all('div', 'yt-lockup-dismissable')
+        if index == -1:
+            return None
+
+        index += len(key)
+        link = ""
+
+        while html[index] != "\"":
+            link += str(html[index])
+            index += 1
+
+        r = "https://www.youtube.com" + "/watch?v=" + link
+        return r
+
 
     def downloadIndividualSong(self, video_URL, song_name, playlist_name):
         self.directorySetup(playlist_name)
@@ -197,24 +210,13 @@ class SpotifyDownloaderClient:
 
     def downloadSong(self, song_data, song, playlist_name):
         try:
-            results = self.getWebpageContents(song_data, song)
-
-            for tile in results:
-                try:
-                    link = tile.find_all('a')[0]['href']
-                    if "&list=" in link:
-                        continue
-                    else:
-                        print ("Video link = https://www.youtube.com" + link)
-                        video_URL = "https://www.youtube.com" + link
-                        break
-                except:
-                    print ("ERROR GETING YOUTUBE URL")
-            else:
-                video_URL = "Error"
-            if video_URL == "Error":
+            link = self.getVideoURL(song_data, song)
+            
+            if link == None:
                 print ("Failed on: " + song_data[song]['artist'] + "  - " + song_data[song]['title'])
                 return 0
+            
+            print("Video Link = " + link)
 
             files_in_cd = os.listdir(self.cwd)
 
@@ -222,9 +224,9 @@ class SpotifyDownloaderClient:
                 if i.endswith(".mp3"):
                     os.remove(self.cwd + "/" + i)
             for i in range(5):
-                a = self.downloadYoutubeToMP3(video_URL)
+                a = self.downloadYoutubeToMP3(link)
                 if not a:
-                    print ("Video download attempt " + str(i + 1) + " failed")
+                    print ("Video download attempt " + str(i + 1) + "/5 failed")
                 else:
                     break
             if not a:
@@ -255,7 +257,7 @@ class SpotifyDownloaderClient:
             audio["title"] = song_data[song]['title']
             audio["album"] = song_data[song]['album']
             audio["artist"] = song_data[song]['artist']
-            audio["genre"] = playlist_name #this allows the user to add the song to the apple music library and create a smart-playlist to only include songs from a certain playlist (under key of genre)
+            audio["genre"] = playlist_name #this allows the user to add the song to the apple music library and create a smart-playlist to only include songs from a certain genre
             audio.save()
 
             title = SpotifyDownloaderClient.stripString(song_data[song]['title'])
@@ -302,8 +304,6 @@ class SpotifyDownloaderClient:
             c = self.downloadSong(song_data, song, playlist_name)
 
             if c:
-                complete_counter += 1
-
                 #update the recently changed playlists dictionary
                 if playlist_name not in self.rcp.keys():
                     self.rcp[playlist_name] = {song_data[song]['title']}
@@ -311,7 +311,10 @@ class SpotifyDownloaderClient:
                     self.rcp[playlist_name].add(song_data[song]['title'])
             else:
                 print("ERROR: Unable to download the song %s" % (song))
+            
+            complete_counter += 1
 
+        
         all_songs = os.listdir(self.cwd + "/output/" + playlist_name + "/")
         n_all_songs = len(all_songs)
 
@@ -324,7 +327,7 @@ class SpotifyDownloaderClient:
         if total == 0:
             SpotifyDownloaderClient.announceCompletion("Playlist is already up to date")
         else:
-            SpotifyDownloaderClient.announceCompletion("All Downloads Finished: %s/%s Were Successful" % (complete_counter, total))
+            SpotifyDownloaderClient.announceCompletion("All Downloads Finished: %s/%s" % (complete_counter, total))
         
         SpotifyDownloaderClient.announceCompletion("There are now %s songs in the playlist %s" % (n_all_songs, playlist_name))
 
