@@ -145,10 +145,16 @@ class SpotifyDownloaderUI:
     def updateAllPlaylists(self):
         playlists = os.listdir(self.cwd + "/output/")
         for playlist in playlists:
+            if playlist == ".DS_Store":
+                continue
+            print("Updating playlist %s:" % playlist)
+            self.current_playlist = playlist
             URIpath = self.cwd + "/output/" + playlist + "/uri.txt"
             if not os.path.exists(URIpath):
+                print("Playlist %s does not have a preset URI" % playlist)
                 continue
             self.updatePlaylist(playlist)
+            print()
 
     def setURI(self, URI):
         if self.current_playlist is  None:

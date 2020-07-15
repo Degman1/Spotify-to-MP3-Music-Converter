@@ -207,6 +207,7 @@ class SpotifyDownloaderClient:
         
         os.rename(file, (name))
         print("Saved at: " + name)
+        print()
 
     def downloadSong(self, song_data, song, playlist_name):
         try:
@@ -268,7 +269,7 @@ class SpotifyDownloaderClient:
             try:
                 name = SpotifyDownloaderClient.stripString(title + ".mp3")
                 os.rename(file, (self.cwd + "/output/" + playlist_name + "/" + name))
-                print ("Saved at: " + self.cwd + "/output/" + playlist_name + "/" + name)
+                print ("Saved at " + self.cwd + "/output/" + playlist_name + "/" + name)
                 return 1
 
             except Exception as e:
@@ -323,11 +324,10 @@ class SpotifyDownloaderClient:
         if ".DS_Store" in all_songs:
             n_all_songs -= 1
         
-        print()
         if total == 0:
-            SpotifyDownloaderClient.announceCompletion("Playlist is already up to date")
+            SpotifyDownloaderClient.announceCompletion("Playlist %s is already up to date" % playlist_name)
         else:
-            SpotifyDownloaderClient.announceCompletion("All Downloads Finished: %s/%s" % (complete_counter, total))
+            SpotifyDownloaderClient.announceCompletion("Downloads Finished: %s/%s" % (complete_counter, total))
         
         SpotifyDownloaderClient.announceCompletion("There are now %s songs in the playlist %s" % (n_all_songs, playlist_name))
 
