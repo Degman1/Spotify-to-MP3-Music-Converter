@@ -7,7 +7,7 @@ Credit to the creator of https://github.com/brentvollebregt/spotify-playlist-dow
 1. Run the SpotifyDownloader executable
 2. Use the help command for a guide to how to work the system
 
-TIP: Get the URI of a Spotify playlist by clicking the three dots at the top (on the desktop version of Spotify) and click share. In this sub-menu, click "Copy Spotify URI". This will copy the URI to your clipboard.
+TIP: Click the three dots at the top of a playlist (on the desktop version of Spotify), click share, and click "Copy Spotify URI" to retrieve the playlist's URI.
 
 To update youtube_dl, run: sudo pip install -U youtube-dl
 If youtube_dl is out of date, the song downloading commands will likely fail.
