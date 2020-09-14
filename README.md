@@ -10,4 +10,5 @@ Credit to the creator of https://github.com/brentvollebregt/spotify-playlist-dow
 TIP: Click the three dots at the top of a playlist (on the desktop version of Spotify), click share, and click "Copy Spotify URI" to retrieve the playlist's URI.
 
 To update youtube_dl, run: sudo pip install -U youtube-dl
+
 If youtube_dl is out of date, the song downloading commands will likely fail.
