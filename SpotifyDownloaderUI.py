@@ -155,6 +155,7 @@ class SpotifyDownloaderUI:
                 continue
             self.updatePlaylist(playlist)
             print()
+        self.current_playlist = None
 
     def setURI(self, URI):
         if self.current_playlist is  None:
