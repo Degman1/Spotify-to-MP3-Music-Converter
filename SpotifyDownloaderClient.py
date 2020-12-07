@@ -38,6 +38,10 @@ class SpotifyDownloaderClient:
         print("*** " + str)
     
     @staticmethod
+    def printErrorMessage(message):
+        print('\033[91mERROR: ' + message + '\033[0m')
+    
+    @staticmethod
     def stripString(text):
         return "".join([i for i in text if i not in [i for i in '/\\:*?"><|']])
     
@@ -68,7 +72,7 @@ class SpotifyDownloaderClient:
             pass
 
         def error(self, msg):
-            print("ERROR: " + str(msg))
+            SpotifyDownloaderClient.printErrorMessage(str(msg))
 
     def downloadYoutubeToMP3(self, link):
         try:
@@ -98,18 +102,18 @@ class SpotifyDownloaderClient:
         SpotifyDownloaderClient.announceCompletion("Directory Setup Successful")
 
     def filterOutPreDownloadedSongs(self, individual_songs, contents):
-        contents = "\n".join(contents)
+        contents = "\n".join(contents).lower()
         individual_songs_temp = []
         # Be careful not to mistake songs with the same 'name' as being the same. They could have the same 
         # general name provided by spotify but still actually be a different song
 
         for song in individual_songs:
-            title = SpotifyDownloaderClient.stripString(song['track']['name'])
+            title = SpotifyDownloaderClient.stripString(song['track']['name']).lower()
             if title not in contents:
                 individual_songs_temp.append(song)
             #else:
             #    print("The song %s is already downloaded into this playlist" % (title))
-
+        
         SpotifyDownloaderClient.announceCompletion("Song Filtering Successful")
         return individual_songs_temp
 
@@ -119,7 +123,7 @@ class SpotifyDownloaderClient:
         
         split = uri.split(":")
         if uri.count(":") != 2 or split[1] != "playlist":
-            print("ERROR: Invalid URI")
+            SpotifyDownloaderClient.printErrorMessage("Invalid URI")
             return None
         playlist_id = split[2]
         offset = 0
@@ -181,7 +185,7 @@ class SpotifyDownloaderClient:
     
         a = self.downloadYoutubeToMP3(video_URL)
         if not a:
-            print("ERROR: Could not download requested song. Please try a different URL (different youtube video)")
+            SpotifyDownloaderClient.printErrorMessage("Could not download requested song. Please try a different URL (different youtube video)")
             return
         
         print("\rDownload and conversion complete")
@@ -292,7 +296,7 @@ class SpotifyDownloaderClient:
 
         except Exception as e:
             print (e)
-            print("Some error happened somewhere... \nSomething went very wrong... Please contact the program designer for help")
+            SpotifyDownloaderClient.printErrorMessage("Some error happened somewhere... \nSomething went very wrong... Please contact the program designer for help")
             return 0
     
     def downloadPlaylist(self, song_data, playlist_name):
@@ -315,7 +319,6 @@ class SpotifyDownloaderClient:
             
             complete_counter += 1
 
-        
         all_songs = os.listdir(self.cwd + "/output/" + playlist_name + "/")
         n_all_songs = len(all_songs)
 
@@ -330,6 +333,7 @@ class SpotifyDownloaderClient:
             SpotifyDownloaderClient.announceCompletion("Downloads Finished: %s/%s" % (complete_counter, total))
         
         SpotifyDownloaderClient.announceCompletion("There are now %s songs in the playlist %s" % (n_all_songs, playlist_name))
+        print()
 
     def runDownload(self, uri, playlist_name):
         self.directorySetup(playlist_name)                      # setup correct directories required for download

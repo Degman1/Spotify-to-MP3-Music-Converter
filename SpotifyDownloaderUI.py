@@ -27,7 +27,7 @@ class SpotifyDownloaderUI:
             os.makedirs(self.cwd + "/output/")
 
     def printHelpMessage(self):
-        desc = "Commands:\n"
+        desc = "Commands (case insensitive):\n"
         desc += "  help                              -- prints out a list of commands\n"
         desc += "  setPlaylist [playlist_name]       -- set current playlist to [playlist_name]; won't create the\n"
         desc += "                                       coresponding directory until songs are downloaded to the [playlist_name]\n"
@@ -47,13 +47,13 @@ class SpotifyDownloaderUI:
         desc += "  contents                          -- prints out the contents of the current playlist\n"
         desc += "  quit                              -- quits the SpotifyDownloader program"
         print(desc)
-    
+
     def setWorkingPlaylist(self, cmdLine):
         p = " ".join(cmdLine)[12:]
         if p != "":
             self.current_playlist = " ".join(cmdLine)[12:]
         else:
-            print("ERROR: Please input a valid playlist name")
+            SpotifyDownloaderClient.printErrorMessage("Please input a valid playlist name")
         
         self.printWorkingPlaylists()
     
@@ -63,14 +63,14 @@ class SpotifyDownloaderUI:
         if len(playlists) == 0:
             print("There are not yet any playlists in the output directory")
         for playlist in playlists:
-            if playlist == self.current_playlist:
+            if playlist.lower() == self.current_playlist.lower():
                 print("* %s" % playlist)
             elif playlist[0] != ".":    #don't include other hidden files, only veiwable directories
                 print("  %s" % playlist)
     
     def removeFile(self, cmdLine):
         if self.current_playlist is None:
-            print("ERROR: Please first set a working playlist")
+            SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
 
         f = " ".join(cmdLine)[3:]
@@ -78,7 +78,7 @@ class SpotifyDownloaderUI:
         if os.path.exists(path):
             os.remove(path)
         else:
-            print("ERROR: No such file or directory: \"%s\"" % path)
+            SpotifyDownloaderClient.printErrorMessage("No such file or directory: \"%s\"" % path)
     
     def downloadPlaylist(self, URI):
         path = self.cwd + "/output/" + self.current_playlist
@@ -88,29 +88,32 @@ class SpotifyDownloaderUI:
             URIFile.close()
 
         if self.current_playlist is  None:
-            print("ERROR: Please first set a working playlist")
+            SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
         self.client.runDownload(URI, self.current_playlist)
 
     def downloadSong(self, video_URL, song_name):
         if self.current_playlist is  None:
-            print("ERROR: Please first set a working playlist")
+            SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
         self.client.downloadIndividualSong(video_URL, song_name, self.current_playlist)
 
     def printContents(self):
         if self.current_playlist is None:
-            print("ERROR: Please first set a working playlist")
+            SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
         c = self.client.getContents(self.current_playlist)
         if c is not None:
             print("\nThe current playlist contains %s songs:" % len(c) + "\n")
             print( "\t" + "\n\t".join(c) )
         else:
-            print("ERROR: The current playlist does not yet exist in the output directory")
+            SpotifyDownloaderClient.printErrorMessage("The current playlist does not yet exist in the output directory")
 
     def printRCP(self):
-        print(str(len(self.client.rcp)) + " playlist(s) have been changed:")
+        if len(self.client.rcp.items()) > 1:
+            print(str(len(self.client.rcp)) + " playlists have been changed:")
+        else:
+            print(str(len(self.client.rcp)) + " playlist have been changed:")
         for playlist, songs in self.client.rcp.items():
             print("\n  " + playlist + "-")
             for s in songs:
@@ -118,7 +121,7 @@ class SpotifyDownloaderUI:
 
     def updatePlaylist(self, playlistName):
         if self.current_playlist is None:
-            print("ERROR: A current playlist must be selected before a path can be displayed")
+            SpotifyDownloaderClient.printErrorMessage("A current playlist must be selected before a path can be displayed")
             return
 
         URI = None
@@ -134,11 +137,11 @@ class SpotifyDownloaderUI:
             if os.path.exists(self.cwd + "/uri.txt"):
                 os.rename(self.cwd + "/uri.txt", URIpath)
             else:
-                print("ERROR: Could not properly move \'uri.txt\' into its apropriate playlist folder")
+                SpotifyDownloaderClient.printErrorMessage("Could not properly move \'uri.txt\' into its apropriate playlist folder")
             
         URIFile.close()
         if URI is None:
-            print("ERROR: Could not obtain the proper URI. Please attempt the downloadPlaylist command instead.")
+            SpotifyDownloaderClient.printErrorMessage("Could not obtain the proper URI. Please attempt the downloadPlaylist command instead.")
         else:
             self.client.runDownload(URI, playlistName)
 
@@ -154,12 +157,11 @@ class SpotifyDownloaderUI:
                 print("Playlist %s does not have a preset URI" % playlist)
                 continue
             self.updatePlaylist(playlist)
-            print()
         self.current_playlist = None
 
     def setURI(self, URI):
         if self.current_playlist is  None:
-            print("ERROR: Please first set a working playlist")
+            SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
 
         URIpath = self.cwd + "/output/" + self.current_playlist + "/uri.txt"
@@ -169,7 +171,7 @@ class SpotifyDownloaderUI:
 
     def printURI(self):
         if self.current_playlist is  None:
-            print("ERROR: Please first set a working playlist")
+            SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
 
         URIpath = self.cwd + "/output/" + self.current_playlist + "/uri.txt"
@@ -179,7 +181,7 @@ class SpotifyDownloaderUI:
             print(URIFile.read())
             URIFile.close()
         else:
-            print("ERROR: No saved spotify URI for the current playlist")
+            SpotifyDownloaderClient.printErrorMessage("No saved spotify URI for the current playlist")
 
     def checkArgs(self, cmdLine, expected, andGreater=False):
         '''Garuntees the number of args provided are correct for the given command'''
@@ -187,12 +189,12 @@ class SpotifyDownloaderUI:
         if andGreater and args >= expected:
             return True
         elif (not andGreater) and args != expected:
-            print("ERROR: Incorect number of arguments. Expected %s not %s args for cmd %s" % (expected, args, cmdLine[0]))
+            SpotifyDownloaderClient.printErrorMessage("Incorect number of arguments. Expected %s not %s args for cmd %s" % (expected, args, cmdLine[0]))
             return False
         return True
     
     def parseInput(self, cmdLine):
-        cmd = cmdLine[0].lower()
+        cmd = cmdLine[0]
         if cmd == "help":
             if self.checkArgs(cmdLine, 0): self.printHelpMessage()
         elif cmd == "setplaylist":
@@ -209,7 +211,7 @@ class SpotifyDownloaderUI:
             if self.checkArgs(cmdLine, 0) and self.current_playlist is not None:
                     print(self.cwd + "/output/" + self.current_playlist + "/")
             else:
-                print("ERROR: A current playlist must be selected before a path can be displayed")
+                SpotifyDownloaderClient.printErrorMessage("A current playlist must be selected before a path can be displayed")
         elif cmd == "downloadsong":
             if self.checkArgs(cmdLine, 2): self.downloadSong(cmdLine[1], cmdLine[2])
         elif cmd == "printrcp":
@@ -222,20 +224,21 @@ class SpotifyDownloaderUI:
             if self.checkArgs(cmdLine, 1): self.setURI(cmdLine[1])
         elif cmd == "printuri":
             if self.checkArgs(cmdLine, 0): self.printURI()
-        else: print("ERROR: No such command as " + cmd)
+        else: SpotifyDownloaderClient.printErrorMessage("No such command as " + cmd)
 
     def run(self):
         '''run the spotify downloader client'''
         print("\nWelcome to the SpotifyDownloader portal. Type \"help\" for a list of commands.")
-        user_input = input("> ")
-        while user_input != "quit":
-            try:
-                self.parseInput(user_input.split(" "))
-            except Exception as e:
-                print(e)
-                print("ERROR: Continued session despite the crash...")
-            print("\n__________________________________________")
-            user_input = input("> ")
+        user_input = input("> ").lower()
+        while user_input != "quit" and user_input != "quit()" and user_input != "q" and user_input != "terminate" and user_input != "close":
+            if user_input != "":
+                try:
+                    self.parseInput(user_input.split(" "))
+                except Exception as e:
+                    print(e)
+                    SpotifyDownloaderClient.printErrorMessage("Continued session despite the crash...")
+                print("\n__________________________________________")
+            user_input = input("> ").lower()
 
 if __name__ == "__main__":
     ui = SpotifyDownloaderUI()
