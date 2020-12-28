@@ -127,7 +127,7 @@ class SpotifyDownloaderClient:
             return None
         playlist_id = split[2]
         offset = 0
-        results = self.sp.user_playlist_tracks("RandoUser", playlist_id, offset=offset) #For some reason the user does not matter even though the method requires it...
+        results = self.sp.user_playlist_tracks("RandoUser", playlist_id, offset=offset, fields="next,items") #For some reason the user does not matter even though the method requires it...
         individual_songs += results['items']
 
         while (results['next'] != None):
@@ -231,7 +231,7 @@ class SpotifyDownloaderClient:
             for i in range(5):
                 a = self.downloadYoutubeToMP3(link)
                 if not a:
-                    print ("Video download attempt " + str(i + 1) + "/5 failed")
+                    print ("Video download attempt " + str(i + 1) + "/5 failed (make sure youtube-dl is up to date)")
                 else:
                     break
             if not a:
