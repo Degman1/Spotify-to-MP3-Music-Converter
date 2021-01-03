@@ -111,10 +111,10 @@ class SpotifyDownloaderUI:
             SpotifyDownloaderClient.printErrorMessage("The current playlist does not yet exist in the output directory")
 
     def printRCP(self):
-        if len(self.client.rcp.items()) > 1:
-            print(str(len(self.client.rcp)) + " playlists have been changed:")
+        if len(self.client.rcp.items()) >= 1:
+            print(str(len(self.client.rcp)) + " playlists have been changed this session:")
         else:
-            print(str(len(self.client.rcp)) + " playlist have been changed:")
+            print("No playlists have been changed this session")
         for playlist, songs in self.client.rcp.items():
             print("\n  " + playlist + "-")
             for s in songs:
@@ -230,8 +230,10 @@ class SpotifyDownloaderUI:
     def run(self):
         '''run the spotify downloader client'''
         print("\nWelcome to the SpotifyDownloader portal. Type \"help\" for a list of commands.")
-        user_input = input("> ").lower()
-        while user_input != "quit" and user_input != "quit()" and user_input != "q" and user_input != "terminate" and user_input != "close":
+        user_input = input("> ").strip().lower()
+
+        # I hate it when you can't figure out how to quit a program easily (ehem vim), so make it super intuitive for the user
+        while user_input != "quit" and user_input != "quit()" and user_input != "q" and user_input != "end" and user_input != "terminate" and user_input != "close" and user_input != "exit":
             if user_input != "":
                 try:
                     self.parseInput(user_input.split(" "))
@@ -239,7 +241,7 @@ class SpotifyDownloaderUI:
                     print(e)
                     SpotifyDownloaderClient.printErrorMessage("Continued session despite the crash...")
                 print("\n__________________________________________")
-            user_input = input("> ").lower()
+            user_input = input("> ").strip().lower()
 
 if __name__ == "__main__":
     ui = SpotifyDownloaderUI()
