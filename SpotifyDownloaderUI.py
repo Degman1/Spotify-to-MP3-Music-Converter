@@ -59,11 +59,12 @@ class SpotifyDownloaderUI:
     
     def printWorkingPlaylists(self):
         '''search through the directories in output to find all the current playlists'''
+
         playlists = os.listdir(self.cwd + "/output/")
         if len(playlists) == 0:
             print("There are not yet any playlists in the output directory")
         for playlist in playlists:
-            if playlist.lower() == self.current_playlist.lower():
+            if self.current_playlist != None and playlist.lower() == self.current_playlist.lower():
                 print("* %s" % playlist)
             elif playlist[0] != ".":    #don't include other hidden files, only veiwable directories
                 print("  %s" % playlist)
