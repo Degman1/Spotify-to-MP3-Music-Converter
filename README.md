@@ -12,3 +12,8 @@ TIP: Click the three dots at the top of a playlist (on the desktop version of Sp
 To update youtube_dl, run: sudo pip install -U youtube-dl (DISCLAIMER: youtube_dl was recently taken down by GitHub, so it may need to be downloaded from an indirect source)
 
 -- If youtube_dl is out of date, the song downloading commands will likely fail.
+
+# Developer Note: Convert SpotifyDownloaderUI.py to executable
+1. Set the RunAsExec variable to True in the SpotifyDownloaderUI.py file
+2. Open the terminal to the correct path and run: pyinstaller --onefile --add-data 'ffmpeg:.' --add-data 'ffprobe:.' --add-data 'ffplay:.' SpotifyDownloaderUI.py
+

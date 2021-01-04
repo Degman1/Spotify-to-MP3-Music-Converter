@@ -11,7 +11,7 @@ import sys
 
 from SpotifyDownloaderClient import SpotifyDownloaderClient
 
-runAsExec = False       #WARNING: Don't forget to change this if creating an exec file
+runAsExec = True       #WARNING: Don't forget to change this if creating an exec file
 
 class SpotifyDownloaderUI:
     current_playlist = None

@@ -322,7 +322,7 @@ class SpotifyDownloaderClient:
         all_songs = os.listdir(self.cwd + "/output/" + playlist_name + "/")
         n_all_songs = len(all_songs)
 
-        if "uri.txt" in all_songs:
+        if ".uri.txt" in all_songs:
             n_all_songs -= 1
         if ".DS_Store" in all_songs:
             n_all_songs -= 1
