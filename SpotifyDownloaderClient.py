@@ -58,8 +58,8 @@ class SpotifyDownloaderClient:
             c = os.listdir(self.cwd + "/output/" + playlist_name)
             if ".DS_Store" in c:
                 c.remove(".DS_Store")
-            if "uri.txt" in c:
-                c.remove("uri.txt")
+            if ".uri.txt" in c:
+                c.remove(".uri.txt")
             return c
         else:
             return None

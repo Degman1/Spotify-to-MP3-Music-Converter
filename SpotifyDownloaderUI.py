@@ -2,7 +2,7 @@
 SpotifyDownloaderUI to create the user interface for the program and handle the various methods of
 SpotifyDownloaderClient in relation to their UI commands
 
-When running in terminal, you must use the sudo command to be able to have admin access
+When running in terminal, use the sudo command to have admin access
 
 """
 
@@ -41,7 +41,7 @@ class SpotifyDownloaderUI:
         desc += "  printPath                                -- prints out the current working directory for playlists\n"
         desc += "  printURI                                 -- prints out the current playlist URI\n"
 
-        desc += "  downloadYoutubeSong [URL] [song_name]    -- downloads the song located at the provided web [URL] at file name [song_name].mp3\n"
+        desc += "  downloadYoutubeSong [URL] [file_name]    -- downloads the song located at the provided web [URL] to file name [file_name].mp3\n"
         desc += "  updatePlaylist                           -- updates the playlist specified by the [URI] located in a text file under the\n"
         desc += "                                              playlist folder into the directory ./output/current_playlist\n"
         desc += "  updateAllPlaylists                       -- updates every available playlist that already has an associated URI\n"
@@ -53,12 +53,12 @@ class SpotifyDownloaderUI:
         
         print(desc)
 
-    def newPlaylist(self, args):
+    def createPlaylist(self, args):
         name = " ".join(args[1:])      # reform original command to grab all the words seperated by spaces in the playlist name
 
         if name in os.listdir(self.cwd + "/output/"):
             SpotifyDownloaderClient.printErrorMessage("This playlist name is already in use, please choose another one to avoid overwriting the existing playlist")
-        if name == "":
+        elif name == "":
             SpotifyDownloaderClient.printErrorMessage("Please input a valid playlist name")
         else:
             self.current_playlist = name
@@ -99,11 +99,11 @@ class SpotifyDownloaderUI:
         else:
             SpotifyDownloaderClient.printErrorMessage("No such file or directory: \"%s\"" % path)
     
-    def downloadYoutubeSong(self, video_URL, song_name):
+    def downloadYoutubeSong(self, video_URL, file_name):
         if self.current_playlist is  None:
             SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
-        self.client.downloadIndividualSong(video_URL, song_name, self.current_playlist)
+        self.client.downloadIndividualSong(video_URL, file_name, self.current_playlist)
 
     def printContents(self):
         if self.current_playlist is None:
@@ -162,7 +162,7 @@ class SpotifyDownloaderUI:
 
         if not os.path.exists(self.cwd + "/output/" + self.current_playlist):
             os.makedirs(self.cwd + "/output/" + self.current_playlist)
-        URIFile = open(self.cwd + "/output/" + self.current_playlist + "/uri.txt", "w")
+        URIFile = open(self.cwd + "/output/" + self.current_playlist + "/.uri.txt", "w")
         URIFile.write(URI)
         URIFile.close()
 
@@ -171,7 +171,7 @@ class SpotifyDownloaderUI:
             SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
 
-        URIpath = self.cwd + "/output/" + self.current_playlist + "/uri.txt"
+        URIpath = self.cwd + "/output/" + self.current_playlist + "/.uri.txt"
 
         if os.path.exists(URIpath):
             URIFile = open(URIpath, "r")
@@ -202,8 +202,8 @@ class SpotifyDownloaderUI:
         cmd = cmdLine[0]
         if cmd == "help":
             if self.checkArgs(cmdLine, 0): self.printHelpMessage()
-        elif cmd == "newplaylist":
-            if self.checkArgs(cmdLine, 2, True): self.newPlaylist(cmdLine[1:])
+        elif cmd == "createplaylist":
+            if self.checkArgs(cmdLine, 2, True): self.createPlaylist(cmdLine[1:])
         elif cmd == "setplaylist":
             if self.checkArgs(cmdLine, 1, True): self.setPlaylist(cmdLine[1:])
         elif cmd == "printplaylists":

@@ -10,7 +10,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+#dist/
 downloads/
 eggs/
 .eggs/
@@ -133,5 +133,6 @@ dmypy.json
 # Specific to this application:
 
 output/
+dist/output/
 
 # -------------------------------------------------------------
