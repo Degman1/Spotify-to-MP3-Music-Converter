@@ -1,4 +1,9 @@
+# Download the following packages to run the program with Spotify
+# If you are only using the executable version, all of these are already bundled into the file
+
 mutagen
 youtube_dl
 BeautifulSoup4
 spotipy
+ffmpeg-python
+ffprobe

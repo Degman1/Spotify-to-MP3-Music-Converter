@@ -9,15 +9,17 @@ When running in terminal, use the sudo command to have admin access
 import os
 import sys
 
-from SpotifyDownloaderClient import SpotifyDownloaderClient
+import ffmpeg   #not sure if this import is necessery in the UI file, but just import to make sure pyinstaller notices it
+import ffprobe
 
-runAsExec = True       #WARNING: Don't forget to change this if creating an exec file
+from SpotifyDownloaderClient import SpotifyDownloaderClient
+from Settings import Settings
 
 class SpotifyDownloaderUI:
     current_playlist = None
 
     def __init__(self):
-        if runAsExec:
+        if Settings.BUILD_EXECUTABLE:
             self.cwd = os.path.dirname(sys.argv[0])    #Use this for running from executable
         else:
             self.cwd = os.getcwd()                      #Use this for simple script running from terminal
@@ -92,10 +94,16 @@ class SpotifyDownloaderUI:
             SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
 
-        f = " ".join(cmdLine)[3:]
+        f = " ".join(cmdLine)
         path = self.cwd + "/output/" + self.current_playlist + "/" + f
         if os.path.exists(path):
-            os.remove(path)
+            try:
+                os.remove(path)
+            except Exception as e:
+                if "[Errno 13] Permission denied: " in str(e):
+                    SpotifyDownloaderClient.printErrorMessage("Cannot remove the mp3 file. PLEASE ENABLE FILE ACCESS IN YOUR SETTINGS by checking off [ System Preferences > Security and Privacy > Full Disk Access > Terminal ]. Or, use the sudo command if running the program in the terminal.", e = e)
+                else:
+                    SpotifyDownloaderClient.printErrorMessage("Failed to remove the mp3 file. Please remove it yourself in the finder application", e = e)
         else:
             SpotifyDownloaderClient.printErrorMessage("No such file or directory: \"%s\"" % path)
     
@@ -144,9 +152,9 @@ class SpotifyDownloaderUI:
                 continue
             print("Updating playlist %s:" % playlist)
             self.current_playlist = playlist
-            URIpath = self.cwd + "/output/" + playlist + "/uri.txt"
+            URIpath = self.cwd + "/output/" + playlist + "/.uri.txt"
             if not os.path.exists(URIpath):
-                print("Playlist %s does not have a preset URI" % playlist)
+                print("Playlist %s does not have a preset URI\n" % playlist)
                 continue
             self.updatePlaylist(playlist)
         self.current_playlist = None
@@ -209,7 +217,7 @@ class SpotifyDownloaderUI:
         elif cmd == "printplaylists":
             if self.checkArgs(cmdLine, 0): self.printPlaylists()
         elif cmd == "rm":
-            if self.checkArgs(cmdLine, 1, True): self.removeFile(cmdLine)
+            if self.checkArgs(cmdLine, 1, True): self.removeFile(cmdLine[1:])
         elif cmd == "printcontents":
             if self.checkArgs(cmdLine, 0): self.printContents()
         elif cmd == "printpath":
@@ -229,7 +237,7 @@ class SpotifyDownloaderUI:
             if self.checkArgs(cmdLine, 1): self.setURI(cmdLine[1])
         elif cmd == "printuri":
             if self.checkArgs(cmdLine, 0): self.printURI()
-        else: SpotifyDownloaderClient.printErrorMessage("No such command as " + cmd)
+        else: SpotifyDownloaderClient.printErrorMessage("No such command as \"" + cmd + "\"")
 
     def run(self):
         '''run the spotify downloader client'''
@@ -245,8 +253,7 @@ class SpotifyDownloaderUI:
                 try:
                     self.parseInput(user_input)
                 except Exception as e:
-                    print(e)
-                    SpotifyDownloaderClient.printErrorMessage("Continued session despite the crash...")
+                    SpotifyDownloaderClient.printErrorMessage("Failed to understand the meaning of the command", e)
                 print("\n__________________________________________")
             user_input = input("> ").strip().split(" ")
             if len(user_input) > 0:     # only change the command to lowercase for parsing

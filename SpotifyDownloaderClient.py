@@ -9,6 +9,9 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import time
 
+import ffmpeg
+import ffprobe
+
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, error, TYER
 from mutagen.easyid3 import EasyID3
@@ -19,6 +22,8 @@ from bs4 import BeautifulSoup
 import os
 import sys
 import requests
+
+from Settings import Settings
 
 class SpotifyDownloaderClient:
     sp = None   #holds spotify client credentials
@@ -38,8 +43,19 @@ class SpotifyDownloaderClient:
         print("*** " + str)
     
     @staticmethod
-    def printErrorMessage(message):
-        print('\033[91mERROR: ' + message + '\033[0m')
+    def printErrorMessage(message, e = None, includeERRORWord = True):     # e is the actual program error message
+        errorWord = "ERROR: "
+        if not includeERRORWord:
+            errorWord = "   "
+        
+        if Settings.DEBUG_MODE and e != None:
+            errorType = type(e).__name__
+            fileLocation = __file__
+            lineNumber = e.__traceback__.tb_lineno
+            print('\033[91m' + errorWord + message + " :: ")
+            print("   message = \"" + str(e) + "\", errorType = \"" + str(errorType) + "\", fileLocation = \"" + str(fileLocation) + "\", lineNumber = \"" + str(lineNumber) + '\"\033[0m')
+        else:
+            print('\033[91m' + errorWord + message + '\033[0m')
     
     @staticmethod
     def stripString(text):
@@ -207,9 +223,9 @@ class SpotifyDownloaderClient:
         audio["title"] = song_name
         audio.save()
 
-        name = self.cwd + "/output/" + playlist_name + "/" + song_name + ".mp3"
+        name = self.cwd + "/output/" + str(playlist_name) + "/" + (song_name) + ".mp3"
         
-        os.rename(file, (name))
+        os.rename(file, name)
         print("Saved at: " + name)
         print()
 
@@ -225,9 +241,9 @@ class SpotifyDownloaderClient:
 
             files_in_cd = os.listdir(self.cwd)
 
-            for i in files_in_cd:
+            """for i in files_in_cd:
                 if i.endswith(".mp3"):
-                    os.remove(self.cwd + "/" + i)
+                    os.remove(self.cwd + "/" + i)"""    # did this originally to find the mp3 file, but this is a HORRIBLE idea if the program happens to be run in the wrong location
             for i in range(5):
                 a = self.downloadYoutubeToMP3(link)
                 if not a:
@@ -242,9 +258,15 @@ class SpotifyDownloaderClient:
 
             files_in_cd = os.listdir(os.getcwd())
 
+            file = None
+
             for i in files_in_cd:
-                if i.endswith(".mp3"):
+                if song_data[song]['artist'].lower() in i.lower():  # TODO find a better way to locate the downloaded mp3 from youtube
                     file = os.getcwd() + "/" + i
+
+            if file is None:
+                SpotifyDownloaderClient.printErrorMessage("The downloaded mp3 file could not be located, please locate it yourself and move it into the correct playlist folder")
+                return
 
             audio = MP3(file, ID3=ID3)
             
@@ -266,8 +288,8 @@ class SpotifyDownloaderClient:
             audio.save()
 
             title = SpotifyDownloaderClient.stripString(song_data[song]['title'])
-            #artist = SpotifyDownloaderClient.stripString(song_data[song]['artist'])
-            #album = SpotifyDownloaderClient.stripString(song_data[song]['album'])
+
+            name = ""   # to make sure the name variable is available in this scope
 
             #rename the mp3 file to put it in the correct directory
             try:
@@ -277,47 +299,54 @@ class SpotifyDownloaderClient:
                 return 1
 
             except Exception as e:
-                print ("Could not rename")
-                print (repr(e))
+                print("Could not rename, trying a different file name")
                 for i in range(10):
                     try:
-                        name = SpotifyDownloaderClient.stripString(artist + " - " + title + "(" + str(i+1) + ").mp3")
-                        print ("Attempting: " + self.cwd + "/output/" + playlist_name + "/" + name)
+                        name = SpotifyDownloaderClient.stripString(title + "(" + str(i + 1) + ").mp3")
+                        #print("   Attempting name: " + self.cwd + "/output/" + playlist_name + "/" + name)
                         os.rename(file, self.cwd + "/output/" + playlist_name + "/" + name)
-                        print ("Saved at: " + self.cwd + "/output/" + name)
+                        print("Saved at: " + self.cwd + "/output/" + name)
                         return 1
-                    except Exception as ex:
-                        print ("Rename Error on " + i + ": " + str(repr(ex)))
-                        return 0
+                    except Exception as e:
+                        if "[Errno 13] Permission denied: " in str(e):
+                            SpotifyDownloaderClient.printErrorMessage("Cannot rename and move the mp3 file. PLEASE ENABLE FILE ACCESS IN YOUR SETTINGS by checking off [ System Preferences > Security and Privacy > Full Disk Access > Terminal ]. Or, use the sudo command if running the program in the terminal.", e = e)
+                            return -1
+                        SpotifyDownloaderClient.printErrorMessage("Rename attempt #" + str(i) + " failed, trying again", e = e)
                 else:
-                    print ("Could not rename (2nd layer)")
-                    os._exit(5)
+                    SpotifyDownloaderClient.printErrorMessage("After multiple tries, the mp3 file could not be renamed and moved into the correct location. Therefore, it was left in the program's current working directory")
                     return 0
 
         except Exception as e:
-            print (e)
-            SpotifyDownloaderClient.printErrorMessage("Some error happened somewhere... \nSomething went very wrong... Please contact the program designer for help")
+            SpotifyDownloaderClient.printErrorMessage("Fatal - Please contact the program designer for help", e)
             return 0
     
     def downloadPlaylist(self, song_data, playlist_name):
         total = len(song_data)
         complete_counter = 0
+        success_counter = 0
 
         for song in song_data:
-            print("\nStarting song %s/%s:" % (complete_counter + 1, total))
+            title = song_data[song]['title']
+            artist = song_data[song]['artist']
 
-            c = self.downloadSong(song_data, song, playlist_name)
+            complete_counter += 1
 
-            if c:
+            print("\nStarting song %s/%s: %s by %s" % (complete_counter, total, title, artist))
+
+            result = self.downloadSong(song_data, song, playlist_name)
+
+            if result == 1:      # successful, continue program
+                success_counter += 1
+
                 #update the recently changed playlists dictionary
                 if playlist_name not in self.rcp.keys():
-                    self.rcp[playlist_name] = {song_data[song]['title']}
+                    self.rcp[playlist_name] = {title}
                 else:
-                    self.rcp[playlist_name].add(song_data[song]['title'])
-            else:
-                print("ERROR: Unable to download the song %s" % (song))
-            
-            complete_counter += 1
+                    self.rcp[playlist_name].add(title)
+            elif result == 0:    # failed, continue program
+                SpotifyDownloaderClient.printErrorMessage("Unable to download the song %s by %s" % (title, artist), includeERRORWord = False)
+            elif result == -1:   # fialed, stop program
+                return
 
         all_songs = os.listdir(self.cwd + "/output/" + playlist_name + "/")
         n_all_songs = len(all_songs)
@@ -330,7 +359,7 @@ class SpotifyDownloaderClient:
         if total == 0:
             SpotifyDownloaderClient.announceCompletion("Playlist %s is already up to date" % playlist_name)
         else:
-            SpotifyDownloaderClient.announceCompletion("Downloads Finished: %s/%s" % (complete_counter, total))
+            SpotifyDownloaderClient.announceCompletion("Successful Downloads: %s/%s" % (success_counter, total))
         
         SpotifyDownloaderClient.announceCompletion("There are now %s songs in the playlist %s" % (n_all_songs, playlist_name))
         print()
