@@ -111,7 +111,7 @@ class SpotifyDownloaderUI:
         if self.current_playlist is  None:
             SpotifyDownloaderClient.printErrorMessage("Please first set a working playlist")
             return
-        self.client.downloadIndividualSong(video_URL, file_name, self.current_playlist)
+        self.client.downloadSongOriginYoutube(video_URL, file_name, self.current_playlist)
 
     def printContents(self):
         if self.current_playlist is None:

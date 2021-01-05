@@ -101,23 +101,23 @@ class SpotifyDownloaderClient:
                 print(str(msg))
 
     def downloadYoutubeToMP3(self, link, outputPath):
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+            }],
+            'logger': self.MyLogger(),
+            'progress_hooks': [SpotifyDownloaderClient.my_hook],
+            'nocheckcertificate': True,
+            'outtmpl': outputPath
+        }
+
         try:
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                }],
-                'logger': self.MyLogger(),
-                'progress_hooks': [SpotifyDownloaderClient.my_hook],
-                'nocheckcertificate': True,
-                'outtmpl': outputPath
-            }
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 a = ydl.download([link])    #TODO: try fetching all the links first and then download all the songs afterwards, might be faster?
             return True
-        except Exception as e:
-            print (repr(e))
+        except Exception:
             return False
     
     def directorySetup(self, playlist_name):
@@ -209,7 +209,7 @@ class SpotifyDownloaderClient:
             if i.endswith(".mp3"):
                 os.remove(self.cwd + "/" + i)
     
-        a = self.downloadYoutubeToMP3(video_URL, "temporaryName.mp3")
+        a = self.downloadYoutubeToMP3(video_URL, "/temporaryName.mp3")
         if not a:
             SpotifyDownloaderClient.printErrorMessage("Could not download requested song. Please try a different URL (different youtube video)")
             return
@@ -233,7 +233,7 @@ class SpotifyDownloaderClient:
         audio["title"] = song_name
         audio.save()
 
-        name = self.cwd + "/output/" + str(playlist_name) + "/" + (song_name) + ".mp3"
+        name = self.cwd + "/output/" + str(playlist_name) + "/" + (song_name) + ".mp3"  #TODO fix this stuff
         
         os.rename(file, name)
         print("Saved at: " + name)
@@ -248,16 +248,16 @@ class SpotifyDownloaderClient:
                 return 0
             
             print("Video Link = " + link)
-
+            
             title_stripped = SpotifyDownloaderClient.stripString(song_data[song]['title'])
-            downloadedFilePath = "/" + playlist_name + "/" + title_stripped + ".mp3"
+            downloadedFilePath = title_stripped + ".mp3"
 
             for i in range(20):
                 if os.path.exists(downloadedFilePath):
-                    downloadedFilePath = "/" + playlist_name + "/" + title_stripped + " (" + str(i) + ")" + ".mp3"
+                    downloadedFilePath = title_stripped + " (" + str(i) + ")" + ".mp3"
 
             if os.path.exists(downloadedFilePath):
-                SpotifyDownloaderClient.printErrorMessage("After 20 attempts to rename the downloaded mp3 file, every attempted file name already existed in the current playlist. Either remove one of those songs from the playlist or contact the program developer")
+                SpotifyDownloaderClient.printErrorMessage("After 20 attempts to rename the downloaded mp3 file, every attempted file name already existed in the current playlist folder. Either remove one of those songs from the playlist or contact the program developer")
                 return 0
 
             success = False
@@ -271,12 +271,16 @@ class SpotifyDownloaderClient:
                 return 0
 
             print ("\rDownload and conversion complete")
-
+            
             if not os.path.exists(downloadedFilePath):
                 SpotifyDownloaderClient.printErrorMessage("The downloaded mp3 file could not be located, please locate it yourself in the playlist folder named \"" + playlist_name + "\"")
                 return
-
-            audio = MP3(downloadedFilePath, ID3=ID3)
+   
+            try:
+                audio = MP3(downloadedFilePath, ID3=ID3)
+            except Exception as e:
+                SpotifyDownloaderClient.printErrorMessage("The file downloaded from youtube was likely corrupted, please attempt to download again", e)
+                return 0
             
             try:
                 audio.add_tags()
