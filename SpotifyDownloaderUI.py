@@ -203,7 +203,7 @@ class SpotifyDownloaderUI:
         if not andGreater and numberArguments == expectedNumberArguments:
             return True
         
-        SpotifyDownloaderClient.printErrorMessage("Incorect number of arguments. Expected %s not %s args for cmd %s" % (expectedNumberArguments, numberArguments, cmdLine[0]))
+        SpotifyDownloaderClient.printErrorMessage("Incorect number of arguments. Expected %s not %s args for the \"%s\" command" % (expectedNumberArguments, numberArguments, cmdLine[0]))
         return False
     
     def parseInput(self, cmdLine):
@@ -253,7 +253,7 @@ class SpotifyDownloaderUI:
                 try:
                     self.parseInput(user_input)
                 except Exception as e:
-                    SpotifyDownloaderClient.printErrorMessage("Failed to understand the meaning of the command", e)
+                    SpotifyDownloaderClient.printErrorMessage("Failed to complete the requested command operation", e)
                 print("\n__________________________________________")
             user_input = input("> ").strip().split(" ")
             if len(user_input) > 0:     # only change the command to lowercase for parsing
