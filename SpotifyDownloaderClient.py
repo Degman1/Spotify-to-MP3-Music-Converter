@@ -37,7 +37,10 @@ class SpotifyDownloaderClient:
         client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
         self.sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
         #self.sp.trace = False
-    
+
+        self.tempMP3FileName = "temporaryMP3File.mp3"
+        self.tempJPGFileName = "temporaryJPGFile.jpg"
+
     @staticmethod
     def announceCompletion(str):
         print("*** " + str)
@@ -59,7 +62,7 @@ class SpotifyDownloaderClient:
             fileLocation = __file__
             lineNumber = e.__traceback__.tb_lineno
             print(errorWord + message + " :: ")
-            print("   message = \"" + str(e) + "\", errorType = \"" + str(errorType) + "\", fileLocation = \"" + str(fileLocation) + "\", lineNumber = \"" + str(lineNumber))
+            print("   message = \"" + str(e) + "\", errorType = \"" + str(errorType) + "\", fileLocation = \"" + str(fileLocation) + "\", lineNumber = \"" + str(lineNumber) + "\"")
         else:
             print(errorWord + message)
         
@@ -100,7 +103,28 @@ class SpotifyDownloaderClient:
             if Settings.DEBUG_MODE:
                 print(str(msg))
 
-    def downloadYoutubeToMP3(self, link, outputPath):
+    @staticmethod
+    def refineFileName(filename, extension):
+        filenameTemp = filename
+        
+        filesInCwd = os.listdir(os.getcwd())
+        fileIndex = 0
+        counter = 1
+        while True:
+            if fileIndex >= len(filesInCwd):
+                return filenameTemp + extension
+            elif filesInCwd[fileIndex] == filenameTemp + extension:
+                filenameTemp = filename + str(counter) + extension
+                counter += 1
+                fileIndex = 0   # start over the search since the tempFileName changed and gotta check again
+            else:
+                fileIndex += 1
+
+    def downloadYoutubeToMP3(self, link):
+        # Make sure the tempFileName isn't already in the current working directory to overwrite something by accident. This will take a bit longer each download, but worth it for being able to work in every instance. Try and speed up later if possible
+
+        self.tempMP3FileName = SpotifyDownloaderClient.refineFileName(str(self.tempMP3FileName[:len(self.tempMP3FileName) - 4]), ".mp3")
+        
         ydl_opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -110,7 +134,7 @@ class SpotifyDownloaderClient:
             'logger': self.MyLogger(),
             'progress_hooks': [SpotifyDownloaderClient.my_hook],
             'nocheckcertificate': True,
-            'outtmpl': outputPath
+            'outtmpl': str(self.tempMP3FileName[:len(self.tempMP3FileName) - 4]) + ".%(ext)s"  # take out the .mp3 extension
         }
 
         try:
@@ -204,23 +228,14 @@ class SpotifyDownloaderClient:
     def downloadSongOriginYoutube(self, video_URL, song_name, playlist_name):
         self.directorySetup(playlist_name)
 
-        files_in_cd = os.listdir(os.getcwd())
-        for i in files_in_cd:
-            if i.endswith(".mp3"):
-                os.remove(self.cwd + "/" + i)
-    
-        a = self.downloadYoutubeToMP3(video_URL, "/temporaryName.mp3")
+        a = self.downloadYoutubeToMP3(video_URL)
         if not a:
             SpotifyDownloaderClient.printErrorMessage("Could not download requested song. Please try a different URL (different youtube video)")
             return
         
         print("\rDownload and conversion complete")
 
-        file = None
-        files_in_cd = os.listdir(os.getcwd())
-        for i in files_in_cd:
-            if i.endswith(".mp3"):
-                file = os.getcwd() + "/" + i
+        file = self.tempMP3FileName
 
         audio = MP3(file, ID3=ID3)
         
@@ -233,7 +248,7 @@ class SpotifyDownloaderClient:
         audio["title"] = song_name
         audio.save()
 
-        name = self.cwd + "/output/" + str(playlist_name) + "/" + (song_name) + ".mp3"  #TODO fix this stuff
+        name = self.cwd + "/output/" + playlist_name + "/" + song_name + ".mp3"
         
         os.rename(file, name)
         print("Saved at: " + name)
@@ -245,42 +260,40 @@ class SpotifyDownloaderClient:
             
             if link == None:
                 SpotifyDownloaderClient.printErrorMessage("Failed to find a Youtube link for this song")
-                return 0
+                return [0, 0]
             
             print("Video Link = " + link)
-            
-            title_stripped = SpotifyDownloaderClient.stripString(song_data[song]['title'])
-            downloadedFilePath = title_stripped + ".mp3"
-
-            for i in range(20):
-                if os.path.exists(downloadedFilePath):
-                    downloadedFilePath = title_stripped + " (" + str(i) + ")" + ".mp3"
-
-            if os.path.exists(downloadedFilePath):
-                SpotifyDownloaderClient.printErrorMessage("After 20 attempts to rename the downloaded mp3 file, every attempted file name already existed in the current playlist folder. Either remove one of those songs from the playlist or contact the program developer")
-                return 0
 
             success = False
 
             for i in range(5):
-                success = self.downloadYoutubeToMP3(link, downloadedFilePath)
-                if not success:
-                    SpotifyDownloaderClient.printErrorMessage("Video download attempt " + str(i + 1) + "/5 failed")
+                success = self.downloadYoutubeToMP3(link)
+                if success:
+                    break
+                SpotifyDownloaderClient.printErrorMessage("Video download attempt " + str(i + 1) + "/5 failed")
 
             if not success:
-                return 0
+                return [0, 0]
 
             print ("\rDownload and conversion complete")
             
-            if not os.path.exists(downloadedFilePath):
+            if not os.path.exists(self.tempMP3FileName):
                 SpotifyDownloaderClient.printErrorMessage("The downloaded mp3 file could not be located, please locate it yourself in the playlist folder named \"" + playlist_name + "\"")
-                return
-   
+                return [0, 0]
+
+            mp3Path = self.cwd + "/output/%s/%s-%s.mp3" % (playlist_name, song_data[song]['title'], song_data[song]['artist'])
+
             try:
-                audio = MP3(downloadedFilePath, ID3=ID3)
+                os.rename(self.tempMP3FileName, mp3Path)
+            except Exception as e:
+                SpotifyDownloaderClient.printErrorMessage("The file downloaded from youtube could not be moved into the correct playlist folder likely due to permission being denied", e)
+                return [0, 1]
+
+            try:
+                audio = MP3(mp3Path, ID3=ID3)
             except Exception as e:
                 SpotifyDownloaderClient.printErrorMessage("The file downloaded from youtube was likely corrupted, please attempt to download again", e)
-                return 0
+                return [0, 1]
             
             try:
                 audio.add_tags()
@@ -288,20 +301,24 @@ class SpotifyDownloaderClient:
                 pass
             
             # add album art to the mp3 file
-            urllib.request.urlretrieve(song_data[song]['ablum_art'], (self.cwd + "/TempAArtImage.jpg"))
-            audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc=u'cover', data=open(self.cwd + "/" + playlist_name + "/TempAArtImage.jpg", 'rb').read()))
+            self.tempArtFileName = SpotifyDownloaderClient.refineFileName(str(self.tempJPGFileName[:len(self.tempJPGFileName) - 4]), ".jpg")
+            jpgPath = self.cwd + "/" + playlist_name + "/" + self.tempJPGFileName
+            urllib.request.urlretrieve(song_data[song]['ablum_art'], jpgPath)
+            audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc=u'cover', data=open(jpgPath, 'rb').read()))
             audio.save()
-            os.remove(self.cwd + "/" + playlist_name + "/TempAArtImage.jpg")
+            os.remove(jpgPath)
 
             # now add the remaining information provided by Spotify to the mp3 file
             # the object stored under audio is changed to type EasyID3 in order to do so
-            audio = EasyID3(downloadedFilePath)
+            audio = EasyID3(mp3Path)
             audio["tracknumber"] = song_data[song]['track']
             audio["title"] = song_data[song]['title']
             audio["album"] = song_data[song]['album']
             audio["artist"] = song_data[song]['artist']
             audio["genre"] = playlist_name #this allows the user to add the song to the apple music library and create a smart-playlist to only include songs from a certain genre
             audio.save()
+
+            return [1, 0]
 
         except Exception as e:
             SpotifyDownloaderClient.printErrorMessage("Fatal - Please contact the program designer for help", e)
@@ -322,7 +339,7 @@ class SpotifyDownloaderClient:
 
             result = self.downloadSongOriginSpotify(song_data, song, playlist_name)
 
-            if result == 1:      # successful, continue program
+            if result[0] == 1:      # successful, continue program
                 success_counter += 1
 
                 #update the recently changed playlists dictionary
@@ -330,9 +347,12 @@ class SpotifyDownloaderClient:
                     self.rcp[playlist_name] = {title}
                 else:
                     self.rcp[playlist_name].add(title)
-            elif result == 0:    # failed, continue program
+            elif result[0] == 0 and result[1] == 0:    # failed, continue program
                 SpotifyDownloaderClient.printErrorMessage("Unable to download the song %s by %s" % (title, artist), includeERRORWord = False)
-            elif result == -1:   # fialed, stop program
+            elif result[0] == 0 and result[1] == 1:    # failed, continue program, delete junk files
+                SpotifyDownloaderClient.printErrorMessage("Unable to download the song %s by %s" % (title, artist), includeERRORWord = False)
+                os.remove(self.tempMP3FileName)
+            elif result[0] == -1:   # fialed, stop program
                 return
 
         all_songs = os.listdir(self.cwd + "/output/" + playlist_name + "/")
