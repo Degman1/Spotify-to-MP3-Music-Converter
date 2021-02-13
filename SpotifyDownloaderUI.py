@@ -218,7 +218,7 @@ class SpotifyDownloaderUI:
             if self.checkArgs(cmdLine, 0): self.printPlaylists()
         elif cmd == "rm":
             if self.checkArgs(cmdLine, 1, True): self.removeFile(cmdLine[1:])
-        elif cmd == "printcontents":
+        elif cmd == "printcontents" or cmd == "ls":  #not show in UI help, just provide option b/c don't wanna confuse normal people
             if self.checkArgs(cmdLine, 0): self.printContents()
         elif cmd == "printpath":
             if self.checkArgs(cmdLine, 0) and self.current_playlist is not None:
@@ -260,5 +260,12 @@ class SpotifyDownloaderUI:
                 user_input[0] = user_input[0].lower()
 
 if __name__ == "__main__":
+    euid = os.geteuid()
+    if euid != 0:
+        print("\nSpotifyDownloader Application Requires File Permissions - Enter Computer Password:")
+        args = ['sudo', sys.executable] + sys.argv + [os.environ]
+        # the next line replaces the currently-running process with the sudo
+        os.execlpe('sudo', *args)
+
     ui = SpotifyDownloaderUI()
     ui.run()

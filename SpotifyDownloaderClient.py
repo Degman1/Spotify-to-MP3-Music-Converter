@@ -152,7 +152,7 @@ class SpotifyDownloaderClient:
         
         SpotifyDownloaderClient.announceCompletion("Directory Setup Successful")
 
-    def filterOutPreDownloadedSongs(self, individual_songs, contents):
+    def filterOutPreDownloadedSongs(self, individual_songs, contents):  #TODO check all playlists for songs and if same in other playlist, create symlink to that and add the new playlist name to the genre identifier
         contents = "\n".join(contents).lower()
         individual_songs_temp = []
         # Be careful not to mistake songs with the same 'name' as being the same. They could have the same 
@@ -300,13 +300,21 @@ class SpotifyDownloaderClient:
             except error:
                 pass
             
+            #TODO fix album art and rename permissions
             # add album art to the mp3 file
-            self.tempArtFileName = SpotifyDownloaderClient.refineFileName(str(self.tempJPGFileName[:len(self.tempJPGFileName) - 4]), ".jpg")
+            
+            urllib.request.urlretrieve(song_data[song]['ablum_art'], (self.cwd + "/DO_NOT_DELETE.jpg"))
+            audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc=u'cover', data=open(self.cwd + "/DO_NOT_DELETE.jpg", 'rb').read()))
+            audio.save()
+            os.remove(self.cwd + "/DO_NOT_DELETE.jpg")
+            
+            # This doesn't work, just use above. This would be cleaner though because it keeps all downloaded files in the selected playlist
+            '''self.tempArtFileName = SpotifyDownloaderClient.refineFileName(str(self.tempJPGFileName[:len(self.tempJPGFileName) - 4]), ".jpg")
             jpgPath = self.cwd + "/" + playlist_name + "/" + self.tempJPGFileName
-            urllib.request.urlretrieve(song_data[song]['ablum_art'], jpgPath)
+            urllib.request.urlretrieve(song_data[song]['ablum_art'], (jpgPath))
             audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc=u'cover', data=open(jpgPath, 'rb').read()))
             audio.save()
-            os.remove(jpgPath)
+            os.remove(jpgPath)'''
 
             # now add the remaining information provided by Spotify to the mp3 file
             # the object stored under audio is changed to type EasyID3 in order to do so
