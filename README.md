@@ -1,5 +1,6 @@
 # Spotify-to-MP3-Music-Converter
 *** Complies with all YouTube copyright requirements, for personal use only ***
+
 A text based application to download songs from a spotify playlist into MP3 format by downloading the song's lyrical youtube video. The songs are then organized in corresponding playlists in the output/ folder (the folder can be imported into apple music to sync with other local music for mac users).
 
 Credit to the GitHub user brentvollebregt for inspiration for this project.
