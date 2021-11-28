@@ -10,8 +10,8 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import time
 
-import ffmpeg
-import ffprobe
+# import ffmpeg
+# import ffprobe
 
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, error, TYER

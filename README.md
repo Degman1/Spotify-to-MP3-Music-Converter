@@ -5,16 +5,21 @@ A text based application to download songs from a spotify playlist into MP3 form
 
 Credit to the GitHub user brentvollebregt for inspiration for this project.
 
-# Usage
-
-## Executable File
+# Executable File
 
 1. Open the executable file named SpotifyDownloaderUI (will take a second to load the terminal session)
 2. The output folder for downloaded playlists will be created adjacent to the location of the executable file
 
-## Python File
+# Python File
 
-1. Install all packages specified in the requirements.txt file
+## Set-up
+
+1. Clone this repository
+2. Install all the required libraries from requirements.txt into the Python path (must keep libraries up to date)
+3. Download the ffmpeg and ffprobe executables from http://ffmpeg.org/download.html and place them in your Python path (must keep file versions up to date)
+
+## Usage
+
 2. Run the SpotifyDownloaderUI.py file with python3 (I wrote the program using Python 3.8.1)
 3. The output folder for downloaded playlists will be created adjacent to the location of the Python file
 

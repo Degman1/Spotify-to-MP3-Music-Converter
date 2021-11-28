@@ -9,8 +9,8 @@ When running in terminal, use the sudo command to have admin access
 import os
 import sys
 
-import ffmpeg   #not sure if this import is necessery in the UI file, but just import to make sure pyinstaller notices it
-import ffprobe
+# import ffmpeg   #not sure if this import is necessery in the UI file, but just import to make sure pyinstaller notices it
+# import ffprobe
 
 from SpotifyDownloaderClient import SpotifyDownloaderClient
 from Settings import Settings
